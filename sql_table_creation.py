@@ -84,6 +84,7 @@ create table if not exists conditions (
     id int auto_increment,
     mrn varchar(255),
     icd10 varchar(255),
+    description varchar(255),
     treatments_procedures_id varchar(255),
     PRIMARY KEY (id) 
 ); 
