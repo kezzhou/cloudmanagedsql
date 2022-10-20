@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 #### Imports ####
 
 import dbm
@@ -29,9 +32,24 @@ db_azure = create_engine(connection_string_azure)
 
 #### Check Tables ####
 
-print(db_azure.table_names()) ## at this point, there should be no tables until we run the mysql commands below
+print(db_azure.table_names()) ## at this point, there should be no tables until we run the mysql commands below, unless we are doing a rerun of the script
 
 
+
+
+#### Drop Old Tables ####
+
+## in the case that there are existing tables such as during a rerun of the script, this function will drop all tables indiscriminately
+## there is no if function that would vet tables to drop.
+
+def droppingFunction_all(dbList, db_source):
+    for table in dbList:
+        db_source.execute(f'drop table {table}')
+        print(f'dropped table {table} succesfully!')
+    else:
+        print(f'task completed')
+
+droppingFunction_all(db_azure.table_names(), db_azure) ## after defining the function we apply it to all table names found in our db connection
 
 
 #### Creating tables within our selected database ####
@@ -41,27 +59,30 @@ print(db_azure.table_names()) ## at this point, there should be no tables until 
 create_table_patients = """
 create table if not exists patients (
     id int auto_increment,
-    mrn varchar(255),
-    first_name varchar(255),
-    last_name varchar(255),
-    dob varchar(255),
-    gender varchar(255),
-    contact_mobile varchar(255),
-    contact_home varchar(255),
-    zip_code varchar(255),
+    mrn varchar(255) null unique,
+    first_name varchar(255) default null,
+    last_name varchar(255) default null,
+    dob varchar(255) default null,
+    gender varchar(255) default null,
+    contact_mobile varchar(255) default null,
+    contact_home varchar(255) default null,
+    zip_code varchar(255) default null,
     PRIMARY KEY (id) 
 ); 
 """
+## we use null unique to signify that there should be no repeating values
+## this will be prevalent with unique identifiers, whether it's drug codes or social determinant codes
+## we use default null to signify that the default value for an empty cell is null
+
 
 ## Medications
 
 create_table_medications = """
 create table if not exists medications (
     id int auto_increment,
-    mrn varchar(255),
-    brand_name varchar(255),
-    active_ingredients varchar(255),
-    ndc varchar(255),
+    ndc varchar(255) null unique,
+    brand_name varchar(255) default null,
+    active_ingredients varchar(255) default null,
     PRIMARY KEY (id) 
 ); 
 """
@@ -71,8 +92,9 @@ create table if not exists medications (
 create_table_treatments_procedures = """
 create table if not exists treatments_procedures (
     id int auto_increment,
-    treatments_procedures_name varchar(255),
-    cpt varchar(255),
+    cpt varchar(255) null unique,
+    treatments_procedures_name varchar(255) default null,
+    description varchar(255) default null,
     PRIMARY KEY (id)
 ); 
 """
@@ -82,10 +104,8 @@ create table if not exists treatments_procedures (
 create_table_conditions = """
 create table if not exists conditions (
     id int auto_increment,
-    mrn varchar(255),
-    icd10 varchar(255),
-    description varchar(255),
-    treatments_procedures_id varchar(255),
+    icd10 varchar(255) null unique,
+    description varchar(255) default null,
     PRIMARY KEY (id) 
 ); 
 """
@@ -95,12 +115,46 @@ create table if not exists conditions (
 create_table_social_determinants = """
 create table if not exists social_determinants (
     id int auto_increment,
-    mrn varchar(255),
-    loinc varchar(255),
-    condition_id varchar(255),
+    loinc varchar(255) null unique,
+    description varchar(255) default null,
     PRIMARY KEY (id) 
 ); 
 """
+
+
+
+## Intermediary tables with Foreign Keys ##
+
+## these tables will combine elements from other tables and be linked via foreign keys
+
+## Patient Medications
+
+create_table_patient_medications = """
+create table if not exists patient_medications (
+    id int auto_increment,
+    mrn varchar(255) default null,
+    ndc varchar(255) default null,
+    PRIMARY KEY (id),
+    FOREIGN KEY (mrn) REFERENCES patients(mrn) ON DELETE CASCADE,
+    FOREIGN KEY (ndc) REFERENCES medications(ndc) ON DELETE CASCADE
+); 
+"""
+
+## Patients Conditions
+
+create_table_patient_conditions = """
+create table if not exists patient_conditions (
+    id int auto_increment,
+    mrn varchar(255) default null,
+    icd10 varchar(255) default null,
+    PRIMARY KEY (id),
+    FOREIGN KEY (mrn) REFERENCES patients(mrn) ON DELETE CASCADE,
+    FOREIGN KEY (icd10) REFERENCES conditions(icd10) ON DELETE CASCADE
+); 
+"""
+
+## our foreign keys cannot be edited in the tables in which they serve as foreign keys. They must be edited at the source of their linkage.
+
 
 #### Execute our written commands with Python ####
 
@@ -109,3 +163,7 @@ db_azure.execute(create_table_medications)
 db_azure.execute(create_table_treatments_procedures)
 db_azure.execute(create_table_conditions)
 db_azure.execute(create_table_social_determinants)
+db_azure.execute(create_table_patient_medications)
+db_azure.execute(create_table_patient_conditions)
+
+print(db_azure.table_names()) ## we can check if our tables went through successfully
