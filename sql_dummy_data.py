@@ -98,19 +98,6 @@ for index, row in df_fake_patients.iterrows():
 ## id int auto_increment, mrn varchar(255), loinc varchar(255), condition_id varchar(255)
 
 
-
-
-db_azure.execute(insert_dummydata_patients)
-db_azure.execute(insert_dummydata_medications)
-db_azure.execute(insert_dummydata_treatments_procedures)
-db_azure.execute(insert_dummydata_conditions)
-db_azure.execute(insert_dummydata_social_determinants)
-
-
-
-
-
-
 #### real icd10 codes
 icd10codes = pd.read_csv('https://raw.githubusercontent.com/Bobrovskiy/ICD-10-CSV/master/2020/diagnosis.csv')
 list(icd10codes.columns)
@@ -171,23 +158,20 @@ df_gcp = pd.read_sql_query("SELECT * FROM production_patients", db_gcp_2)
 
 ########## INSERTING IN FAKE CONDITIONS ##########
 
-insertQuery = "INSERT INTO production_conditions (icd10_code, icd10_description) VALUES (%s, %s)"
+insertQuery = "INSERT INTO conditions (icd10, description) VALUES (%s, %s)"
 
 startingRow = 0
 for index, row in icd10codesShort_1k.iterrows():
     startingRow += 1
     print('startingRow: ', startingRow)
-    # db_azure.execute(insertQuery, (row['CodeWithSeparator'], row['ShortDescription']))
+    db_azure.execute(insertQuery, (row['CodeWithSeparator'], row['ShortDescription']))
     print("inserted row db_azure: ", index)
-    db_gcp_2.execute(insertQuery, (row['CodeWithSeparator'], row['ShortDescription']))
-    print("inserted row db_gcp: ", index)
     ## stop once we have 100 rows
     if startingRow == 100:
         break
 
 # query dbs to see if data is there
 df_azure = pd.read_sql_query("SELECT * FROM production_conditions", db_azure)
-df_gcp = pd.read_sql_query("SELECT * FROM production_conditions", db_gcp)
 
 # ###### the above way is inefficient, but it works. 
 # ###### below is better if we have thousands/millions of rows to insert
