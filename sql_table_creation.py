@@ -49,8 +49,27 @@ def droppingFunction_all(dbList, db_source):
     else:
         print(f'task completed')
 
+disable_foreign_key = """
+SET FOREIGN_KEY_CHECKS=0
+;
+"""
+
+## first we disable foreign key so that we can drop tables that are linked via foreign key
+
+reenable_foreign_key = """
+SET FOREIGN_KEY_CHECKS=1
+;
+"""
+
+## then we reenable foreign key checks so that our tables function properly
+
+db_azure.execute(disable_foreign_key)
+
 droppingFunction_all(db_azure.table_names(), db_azure) ## after defining the function we apply it to all table names found in our db connection
 
+db_azure.execute(reenable_foreign_key)
+
+print(db_azure.table_names())
 
 #### Creating tables within our selected database ####
 
@@ -81,7 +100,7 @@ create_table_medications = """
 create table if not exists medications (
     id int auto_increment,
     ndc varchar(255) null unique,
-    brand_name varchar(255) default null,
+    generic varchar(255) default null,
     active_ingredients varchar(255) default null,
     PRIMARY KEY (id) 
 ); 
@@ -89,11 +108,10 @@ create table if not exists medications (
 
 ## Treatments/Procedures
 
-create_table_treatments_procedures = """
-create table if not exists treatments_procedures (
+create_table_treatment_procedures = """
+create table if not exists treatment_procedures (
     id int auto_increment,
     cpt varchar(255) null unique,
-    treatments_procedures_name varchar(255) default null,
     description varchar(255) default null,
     PRIMARY KEY (id)
 ); 
@@ -140,7 +158,7 @@ create table if not exists patient_medications (
 ); 
 """
 
-## Patients Conditions
+## Patient Conditions
 
 create_table_patient_conditions = """
 create table if not exists patient_conditions (
@@ -153,6 +171,31 @@ create table if not exists patient_conditions (
 ); 
 """
 
+## Patient Treatments Procedures
+
+create_table_patient_treatment_procedures = """
+create table if not exists patient_treatment_procedures (
+    id int auto_increment,
+    mrn varchar(255) default null,
+    cpt varchar(255) default null,
+    PRIMARY KEY (id),
+    FOREIGN KEY (mrn) REFERENCES patients(mrn) ON DELETE CASCADE,
+    FOREIGN KEY (cpt) REFERENCES treatment_procedures(cpt) ON DELETE CASCADE
+); 
+"""
+
+## Patient Social Determinants
+
+create_table_patient_social_determinants = """
+create table if not exists patient_social_determinants (
+    id int auto_increment,
+    mrn varchar(255) default null,
+    loinc varchar(255) default null,
+    PRIMARY KEY (id),
+    FOREIGN KEY (mrn) REFERENCES patients(mrn) ON DELETE CASCADE,
+    FOREIGN KEY (loinc) REFERENCES social_determinants(loinc) ON DELETE CASCADE
+); 
+"""
 ## our foreign keys cannot be edited in the tables in which they serve as foreign keys. They must be edited at the source of their linkage.
 
 
@@ -160,10 +203,14 @@ create table if not exists patient_conditions (
 
 db_azure.execute(create_table_patients)
 db_azure.execute(create_table_medications)
-db_azure.execute(create_table_treatments_procedures)
+db_azure.execute(create_table_treatment_procedures)
 db_azure.execute(create_table_conditions)
 db_azure.execute(create_table_social_determinants)
 db_azure.execute(create_table_patient_medications)
 db_azure.execute(create_table_patient_conditions)
+db_azure.execute(create_table_patient_treatment_procedures)
+db_azure.execute(create_table_patient_social_determinants)
 
 print(db_azure.table_names()) ## we can check if our tables went through successfully
+
+## be careful about running the whole script at once - might strain vs code 
