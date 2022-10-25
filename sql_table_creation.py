@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+## Note: be careful about running the whole script at once - might strain vs code 
+## Need to ensure server_paremters => require_secure_transport is OFF in Azure 
+
+
 #### Imports ####
 
 import dbm
@@ -25,7 +29,6 @@ AZURE_MYSQL_DATABASE = os.getenv("AZURE_MYSQL_DATABASE")
 connection_string_azure = f'mysql+pymysql://{AZURE_MYSQL_USER}:{AZURE_MYSQL_PASSWORD}@{AZURE_MYSQL_HOSTNAME}:3306/{AZURE_MYSQL_DATABASE}'
 db_azure = create_engine(connection_string_azure)
 
-#### note to self, need to ensure server_paremters => require_secure_transport is OFF in Azure 
 
 
 
@@ -213,4 +216,3 @@ db_azure.execute(create_table_patient_social_determinants)
 
 print(db_azure.table_names()) ## we can check if our tables went through successfully
 
-## be careful about running the whole script at once - might strain vs code 
