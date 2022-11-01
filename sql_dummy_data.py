@@ -34,7 +34,7 @@ db_azure = create_engine(connection_string_azure)
 
 #### Check Tables ####
 
-print(db_azure.table_names()) ## we should see five now
+print(db_azure.table_names()) ## we should see nine now
 
 
 
